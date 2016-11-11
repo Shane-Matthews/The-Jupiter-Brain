@@ -3,6 +3,8 @@ using System.Collections;
 
 public class playerController : MonoBehaviour {
 
+    NotificationsManager Notifications = null;
+
     //component variables
     private CharacterController pController;
     private SpriteRenderer playerSprite;
@@ -39,6 +41,7 @@ public class playerController : MonoBehaviour {
         fireSound = soundList[0];
         jumpSound1 = soundList[1];
         jumpSound2 = soundList[2];
+        Notifications = GameObject.FindWithTag("EventManager").GetComponent<NotificationsManager>();
 	}
 	
 	// Update is called once per frame
@@ -125,5 +128,18 @@ public class playerController : MonoBehaviour {
         yield return new WaitForSecondsRealtime(0.7f);
         Destroy(bullet);
         shotsInScene--;
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("KillBox") && Notifications != null)
+        {
+            Notifications.PostNotification(this, "KillBarrierDeath");
+        }
+    }
+
+    public Vector2 getMoveDirection()
+    {
+        return moveDirection;
     }
 }
