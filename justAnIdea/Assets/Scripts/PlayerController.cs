@@ -1,97 +1,122 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-[RequireComponent(typeof(PlayerPhysics))]
-public class PlayerController : MonoBehaviour {
+public class playerController : MonoBehaviour {
 
-    //Movement Variables
-    private float gravity = 70;
-    private float speed = 12;
-    private float acceleration = 60;
-    private float jumpHeight = 20;
+    //component variables
+    private CharacterController pController;
+    private SpriteRenderer playerSprite;
+    public GameObject bulletPrefab;
+    private GameObject bulletSpawn;
+    private BulletManager bulletManager;
+    private AudioSource fireSound;
 
-    private int maxJumps = 2;
-    private int currentJumps = 0;
+    //movement variables
+    private float speed = 10f;
+    private float jumpSpeed = 10;
+    private float gravity = 30.0f;
+    private Vector2 moveDirection = Vector2.zero;
 
-    private PlayerPhysics playerPhysics;
+    //jump and shoot variables
+    public int shotsInScene = 0;
+    public int maxShots = 3;
+    public int numJumps;
+    public int maxJumps = 2;
+    private bool canShoot;
+    private bool canJump;
 
-    private SpriteRenderer spriteRenderer;
+    public bool isGrounded;
 
-    private float currentSpeed;
-    private float targetSpeed;
-    private bool canJumpAgain;
-
-    private Vector2 amountToMove;
-
-	// Use this for initialization
-	void Start () {
-        playerPhysics = GetComponent<PlayerPhysics>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+    // Use this for initialization
+    void Start () {
+        pController = GetComponent<CharacterController>();
+        playerSprite = GetComponent<SpriteRenderer>();
+        bulletSpawn = GameObject.FindWithTag("bulletSpawn");
+        fireSound = GetComponent<AudioSource>();
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void FixedUpdate () {
+        playerControls();
+        flipSprite();
+        Debug.DrawRay(transform.position, transform.right);
+    }
 
-        if (playerPhysics.movementStopped)
-        {
-            targetSpeed = 0;
-            currentSpeed = 0;
-        }
-
-        targetSpeed = Input.GetAxisRaw("Horizontal") * speed;
-        currentSpeed = IncrementTowards(currentSpeed, targetSpeed, acceleration);
-
-        //flip sprite direction to reflect which direction you're moving
-        if (targetSpeed < 0)
-        {
-            spriteRenderer.flipX = true;
-        }
-        if (targetSpeed > 0)
-        {
-            spriteRenderer.flipX = false;
-        }
-
-        if (playerPhysics.grounded)
-        {
-            amountToMove.y = 0;
-            currentJumps = 0;
-            //Jump
-            if (Input.GetButtonDown("Jump"))
-            {
-                amountToMove.y = jumpHeight;
-                currentJumps += 1;
-                canJumpAgain = false;
-            }
-        }
-
-        if (Input.GetButtonUp("Jump") && canJumpAgain == false) //in air or on ground, if jump button is released, set bool for double jump availability to true
-        {
-            canJumpAgain = true;
-        }
-
-        if (canJumpAgain == true && currentJumps < maxJumps && Input.GetButtonDown("Jump")) //Double Jump
-        {
-            amountToMove.y = jumpHeight;
-            currentJumps += 1;
-        }
-        
-        amountToMove.x = currentSpeed;
-        amountToMove.y -= gravity * Time.deltaTime;
-        playerPhysics.Move(amountToMove * Time.deltaTime);
-	}
-
-    //Increase n towards target by speed
-    private float IncrementTowards(float n, float target, float a)
+    void playerControls()
     {
-        if (n == target)
+        if (pController.isGrounded)
         {
-            return n;
+            isGrounded = true;
+            numJumps = maxJumps;
+            moveDirection = new Vector2(Input.GetAxis("Horizontal"), 0);
+            moveDirection = transform.TransformDirection(moveDirection);
+            moveDirection *= speed;
         }
         else
         {
-            float dir = Mathf.Sign(target - n); //must be increased or decreased to get  closer to target
-            n += a * Time.deltaTime * dir;
-            return (dir == Mathf.Sign(target - n)) ? n : target; //if n has passed target, return target, otherwise return n
+            isGrounded = false;
         }
+        
+
+            if (Input.GetButtonDown("Jump"))
+            {
+                if (numJumps > 0)
+                {
+                    moveDirection.y = jumpSpeed;
+                    numJumps--;
+                }
+            }
+
+            if (Input.GetButtonDown("Fire1"))
+            {
+                shoot();
+            }
+
+            moveDirection.y -= gravity * Time.deltaTime;
+            pController.Move(moveDirection * Time.deltaTime);
+    }
+
+    void flipSprite()
+    {
+        if (moveDirection.x > 0)
+        {
+            playerSprite.flipX = false;
+        }
+        if (moveDirection.x < 0)
+        {
+            playerSprite.flipX = true;
+        }
+    }
+    
+    void shoot()
+    {
+        if (shotsInScene < maxShots)
+        {
+            fireSound.Play();
+            //Clone of the bullet
+            GameObject clone;
+
+            //spawning the bullet at position
+            clone = (Instantiate(bulletPrefab, bulletSpawn.transform.position, bulletSpawn.transform.rotation)) as GameObject;
+            shotsInScene++;
+            if (!playerSprite.flipX)
+            {
+                clone.GetComponent<Rigidbody>().AddForce(1000, 0, 0);
+            }
+            else
+            {
+                clone.GetComponent<Rigidbody>().AddForce(-1000, 0, 0);
+            }
+
+            StartCoroutine(destroyBulletAfterTime(clone));
+        }
+    }
+
+    //delete the bullets after a few seconds
+    IEnumerator destroyBulletAfterTime(GameObject bullet)
+    {
+        yield return new WaitForSecondsRealtime(0.7f);
+        Destroy(bullet);
+        shotsInScene--;
     }
 }
