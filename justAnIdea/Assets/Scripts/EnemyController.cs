@@ -13,8 +13,8 @@ public class EnemyController : MonoBehaviour {
      * lists of game objects*/
 
     public SpriteRenderer spriteRenderer;
-    private GameObject target;
-    private CharacterController eController;
+    public GameObject target;
+    public CharacterController eCont;
     private playerController pController;
 
     public float mass;
@@ -28,7 +28,7 @@ public class EnemyController : MonoBehaviour {
     private float approachRadius = 14;
 
     private Transform targetTransform;
-    private Vector3 velocity;
+    public Vector3 velocity;
 
     private Vector3 targetDifference;
     private float targetDistance;
@@ -37,7 +37,7 @@ public class EnemyController : MonoBehaviour {
     void Start () {
         spriteRenderer = GetComponent<SpriteRenderer>();
         target = GameObject.FindWithTag("Player");
-        eController = GetComponent<CharacterController>();
+        eCont = GetComponent<CharacterController>();
         pController = target.GetComponent<playerController>();
     }
 	
@@ -51,9 +51,9 @@ public class EnemyController : MonoBehaviour {
 
         //moves the position
         velocity.y -= 1000.0f * Time.deltaTime;
-        eController.Move(velocity * speed * Time.deltaTime);
+        eCont.Move(velocity * speed * Time.deltaTime);
         float distance = Vector3.Distance(transform.position, targetTransform.position);
-        if (distance < approachRadius && distance > 1.5)
+        if (distance < approachRadius && distance > 0.65)
         {
             if (pController.isGrounded)
             {
@@ -97,7 +97,7 @@ public class EnemyController : MonoBehaviour {
     void approach()
     {
         //desired velocity becomes towads the target, but is slowed by distance
-        Vector3 desiredVelocity = targetDifference.normalized * maxVelocity * (targetDistance / approachRadius);
+        Vector3 desiredVelocity = targetDifference.normalized * maxVelocity * (targetDistance);
         //steer towards wanted velocity
         steering(desiredVelocity);
     }

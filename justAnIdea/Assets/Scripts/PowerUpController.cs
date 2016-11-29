@@ -7,8 +7,9 @@ public class PowerUpController : MonoBehaviour {
     private playerController playerHealthRef;
     private BoxCollider pickupBox;
     private SpriteRenderer sprite;
-    private AudioSource pickupSound;
+    SoundManager soundManager;
     private Vector3 velocity;
+    private GameObject[] powerups;
 
     private int amountToRestore = 30;
     float alpha = 1;
@@ -20,7 +21,8 @@ public class PowerUpController : MonoBehaviour {
         pUpC = GetComponent<CharacterController>();
         pickupBox = GetComponent<BoxCollider>();
         sprite = GetComponent<SpriteRenderer>();
-        pickupSound = GetComponent<AudioSource>();
+        soundManager = SoundManager.Instance;
+        powerups = GameObject.FindGameObjectsWithTag("powerUp");
     }
 	
 	// Update is called once per frame
@@ -33,6 +35,12 @@ public class PowerUpController : MonoBehaviour {
             alpha -= 0.07f;
             fadeAway();
         }
+
+        powerups = GameObject.FindGameObjectsWithTag("powerUp");
+        foreach (GameObject powerup in powerups)
+        {
+            Physics.IgnoreCollision(powerup.GetComponent<CharacterController>(), pUpC);
+        }
     }
 
     void OnTriggerEnter(Collider collider)
@@ -41,7 +49,7 @@ public class PowerUpController : MonoBehaviour {
         {
             playerHealthRef = collider.gameObject.GetComponent<playerController>();
             playerHealthRef.gainHealth(amountToRestore);
-            pickupSound.Play();
+            soundManager.PlaySound(3);
             StartCoroutine(destroyDelay());
 
         }

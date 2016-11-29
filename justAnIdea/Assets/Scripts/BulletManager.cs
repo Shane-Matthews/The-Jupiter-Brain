@@ -42,5 +42,12 @@ public class BulletManager : MonoBehaviour {
             playerHealthManager.loseHealth(damageToPlayer);
             Destroy(this.gameObject);
         }
+
+        else if (collider.gameObject.tag == "Player" && this.gameObject.tag == "BossBullet")
+        {
+            playerHealthManager = collider.gameObject.GetComponent<playerController>();
+            playerHealthManager.loseHealth(damageToPlayer + 10);
+            Destroy(this.gameObject);
+        }
     }
 }

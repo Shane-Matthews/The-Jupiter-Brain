@@ -10,11 +10,9 @@ public class playerController : MonoBehaviour {
     private SpriteRenderer playerSprite;
     public GameObject bulletPrefab;
     private BulletManager bulletManager;
-    private AudioSource fireSound;
-    private AudioSource jumpSound1;
-    private AudioSource jumpSound2;
-    private AudioSource hurtSound;
-    private AudioSource[] soundList;
+    SoundManager soundManager;
+    private GameObject[] enemies;
+    private healthBar hBar;
 
     //movement variables
     private float speed = 10f;
@@ -30,7 +28,11 @@ public class playerController : MonoBehaviour {
     private bool canShoot;
     private bool canJump;
 
+    private bool canBeHit;
+
     public bool isGrounded;
+
+    private float hurtForce = 3.0f;
 
     public int currentHealth;
     private int maxHealth = 100;
@@ -41,14 +43,19 @@ public class playerController : MonoBehaviour {
     void Start () {
         pController = GetComponent<CharacterController>();
         playerSprite = GetComponent<SpriteRenderer>();
-        soundList = GetComponents<AudioSource>();
-        fireSound = soundList[0];
-        jumpSound1 = soundList[1];
-        jumpSound2 = soundList[2];
-        hurtSound = soundList[3];
+        soundManager = SoundManager.Instance;
         currentHealth = maxHealth;
         Notifications = GameObject.FindWithTag("EventManager").GetComponent<NotificationsManager>();
+        hBar = GetComponent<healthBar>();
         color = playerSprite.color;
+        enemies = GameObject.FindGameObjectsWithTag("Enemy");
+
+        canBeHit = true;
+
+        foreach(GameObject enemy in enemies)
+        {
+            Physics.IgnoreCollision(enemy.GetComponent<CharacterController>(), pController);
+        }
     }
 	
 	// Update is called once per frame
@@ -71,26 +78,34 @@ public class playerController : MonoBehaviour {
         else
         {
             isGrounded = false;
+            moveDirection.x = Input.GetAxis("Horizontal") * speed / 1.5f;
         }
-        
 
-            if (Input.GetButtonDown("Jump"))
+
+        if (Input.GetButtonDown("Jump"))
+        {
+            if (numJumps > 0)
             {
-                if (numJumps > 0)
+                if (numJumps > 1)
                 {
-                jumpSound1.Play();
-                    moveDirection.y = jumpSpeed;
-                    numJumps--;
+                    soundManager.PlaySound(5);
                 }
+                else
+                {
+                    soundManager.PlaySound(6);
+                }
+                moveDirection.y = jumpSpeed;
+                numJumps--;
             }
+        }
 
-            if (Input.GetButtonDown("Fire1"))
-            {
-                shoot();
-            }
+        if (Input.GetButtonDown("Fire1"))
+        {
+            shoot();
+        }
 
-            moveDirection.y -= gravity * Time.deltaTime;
-            pController.Move(moveDirection * Time.deltaTime);
+        moveDirection.y -= gravity * Time.deltaTime;
+        pController.Move(moveDirection * Time.deltaTime);
     }
 
     void flipSprite()
@@ -109,7 +124,7 @@ public class playerController : MonoBehaviour {
     {
         if (shotsInScene < maxShots)
         {
-            fireSound.Play();
+            soundManager.PlaySound(7);
             //Clone of the bullet
             GameObject clone;
 
@@ -139,7 +154,9 @@ public class playerController : MonoBehaviour {
 
     public void gainHealth(int amount)
     {
+        float barAmount = amount;
         currentHealth += amount;
+        hBar.Add(barAmount);
         if (currentHealth > maxHealth)
         {
             currentHealth = maxHealth;
@@ -148,14 +165,21 @@ public class playerController : MonoBehaviour {
 
     public void loseHealth(int amount)
     {
-        hurtSound.Play();
-        StartCoroutine(flashDamage());
-        currentHealth -= amount;
-        if (currentHealth <= 0)
+        if (canBeHit)
         {
-            death();
-        }
+            soundManager.PlaySound(4);
+            StartCoroutine(flashDamage());
+            float barAmount = amount;
+            currentHealth -= amount;
+            hBar.Subtract(barAmount);
+            moveDirection.x -= hurtForce * Time.deltaTime;
+            pController.Move(moveDirection * Time.deltaTime);
 
+            if (currentHealth <= 0)
+            {
+                death();
+            }
+        }
     }
 
     void OnTriggerEnter(Collider other)
@@ -173,8 +197,26 @@ public class playerController : MonoBehaviour {
 
     IEnumerator flashDamage()
     {
-        playerSprite.color = new Color(1f, 0f, 0f, 1f);
-        yield return new WaitForSecondsRealtime(0.05f);
-        playerSprite.color = new Color(color.x, color.y, color.z, color.w);
+        StartCoroutine(invincibility());
+        while (!canBeHit)
+        {
+            if (color.x < 1)
+            {
+                playerSprite.color = new Color(color.x++, color.y, color.z, color.w);
+            }
+            else if (color.x > 0)
+            {
+                playerSprite.color = new Color(color.x--, color.y, color.z, color.w);
+            }
+            yield return new WaitForSecondsRealtime(0.1f);
+            playerSprite.color = new Color(color.x, color.y, color.z, color.w);
+        }
+    }
+
+    IEnumerator invincibility()
+    {
+        canBeHit = false;
+        yield return new WaitForSecondsRealtime(1.1f);
+        canBeHit = true;
     }
 }

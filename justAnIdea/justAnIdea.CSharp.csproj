@@ -72,6 +72,10 @@
     <Compile Include="Assets\Scripts\NotificationsManager.cs" />
     <Compile Include="Assets\Scripts\Poster.cs" />
     <Compile Include="Assets\Scripts\PowerUpController.cs" />
+    <Compile Include="Assets\Scripts\SoundManager.cs" />
+    <Compile Include="Assets\Scripts\bossEnemyScript.cs" />
+    <Compile Include="Assets\Scripts\healthBar.cs" />
+    <Compile Include="Assets\Scripts\movingPlatform.cs" />
     <Compile Include="Assets\Scripts\playerController.cs" />
     <Compile Include="Assets\Scripts\shootEnemyBehavior.cs" />
   </ItemGroup>

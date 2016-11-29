@@ -4,11 +4,9 @@ using System.Collections;
 public class shootEnemyBehavior : MonoBehaviour {
 
     public GameObject bulletPrefab;
-    private EnemyController eController;
+    public EnemyController eController;
     private EnemyManager eManager;
-    private AudioSource fireSound;
-
-    private AudioSource[] soundList;
+    SoundManager soundManager;
 
     public int shotsInScene = 0;
     public int maxShots = 1;
@@ -22,8 +20,7 @@ public class shootEnemyBehavior : MonoBehaviour {
     void Start () {
         eController = GetComponent<EnemyController>();
         eManager = GetComponent<EnemyManager>();
-        soundList = GetComponents <AudioSource>();
-        fireSound = soundList[1];
+        soundManager = SoundManager.Instance;
         isAlive = true;
 	}
 	
@@ -52,7 +49,7 @@ public class shootEnemyBehavior : MonoBehaviour {
     {
         if (shotsInScene < maxShots)
         {
-            fireSound.Play();
+            soundManager.PlaySound(8);
             //Clone of the bullet
             GameObject clone;
 

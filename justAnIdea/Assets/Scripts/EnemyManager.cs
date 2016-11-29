@@ -8,11 +8,13 @@ public class EnemyManager : MonoBehaviour
     EnemyController cEnemy;
     public GameObject healthPowerupPrefab;
     ParticleSystem particles;
-    AudioSource deathSound;
+    SoundManager soundManager;
     public SpriteRenderer spriteRenderer;
+    private GameObject[] powerups;
 
     public int currentHealth;
-    int maxHealth = 8;
+    public int maxHealth = 8;
+    int damage = 12;
 
     Vector4 color;
 
@@ -27,11 +29,12 @@ public class EnemyManager : MonoBehaviour
         eBox = GetComponent<BoxCollider>();
         cEnemy = GetComponent<EnemyController>();
         particles = GetComponent<ParticleSystem>();
-        deathSound = GetComponent<AudioSource>(); 
+        soundManager = SoundManager.Instance; 
         currentHealth = maxHealth;
         isFade = false;
         alpha = 1;
         color = spriteRenderer.color;
+        powerups = GameObject.FindGameObjectsWithTag("powerUp");
     }
 
     void Update()
@@ -41,6 +44,13 @@ public class EnemyManager : MonoBehaviour
             alpha -= 0.01f;
             fadeAway();
         }
+
+        powerups = GameObject.FindGameObjectsWithTag("powerUp");
+        foreach (GameObject powerup in powerups)
+        {
+            Physics.IgnoreCollision(powerup.GetComponent<CharacterController>(), eController);
+        }
+        attack();
     }
 
     public void takeDamage(int damage)
@@ -56,7 +66,7 @@ public class EnemyManager : MonoBehaviour
 
     void death()
     {
-        deathSound.Play();
+        soundManager.PlaySound(2);
         particles.Play();
         fadeAway();
         StartCoroutine(deathDelay());
@@ -90,8 +100,17 @@ public class EnemyManager : MonoBehaviour
         cEnemy.spriteRenderer.color = new Color(color.x, color.y, color.z, color.w);
     }
 
+    void attack()
+    {
+        float distance = cEnemy.getDistanceFromPlayer();
+        if (distance <= 0.85 && eController.enabled)
+        {
+            cEnemy.target.GetComponent<playerController>().loseHealth(damage);
+        }
+    }
+
     //generates a number between 0 and 1
-    float generateNumber()
+    public float generateNumber()
     {
         float randomNumber = Random.value;
         return randomNumber;
@@ -100,10 +119,10 @@ public class EnemyManager : MonoBehaviour
     void dropPowerup()
     {
         //check chance to drop
-        if (generateNumber() < 0.4f)
+        if (generateNumber() < 0.6f)
         {
             //drop health
-            if (generateNumber() < 0.5f)
+            if (generateNumber() < 1.1f)
             {
 
                 //Clone of the bullet
